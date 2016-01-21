@@ -123,16 +123,16 @@ module.exports = (robot) ->
   listOpenPullRequestsForRoom = (room, user) ->
     repoarr = repos[room]
     if not repoarr
-      robot.messageRoom room, "There is no github repository associated with this room (#{room}). Contact your friendly <@#{robot.name}> administrator for assistance"
+      robot.messageRoom room, "There is no github repository associated with this room. Contact your friendly <@#{robot.name}> administrator for assistance"
       return
 
     for repo in repoarr 
         repo = octo.repos(githubOrg, repo)
         repo.pulls.fetch(state: "open").then (prs) ->
-        	return Promise.all prs.map (pr) ->
-	            if not user? or pr.assignee?.login.toLowerCase() is user.toLowerCase()
-	                return repo.pulls(pr.number).fetch()
-	            return
+        return Promise.all prs.map (pr) ->
+            if not user? or pr.assignee?.login.toLowerCase() is user.toLowerCase()
+                return repo.pulls(pr.number).fetch()
+            return
         .then ( prs ) ->
             message = ""
             for pr in prs when pr
