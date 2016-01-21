@@ -121,32 +121,33 @@ module.exports = (robot) ->
     notifications.length - (notificationsToKeep.length)
 
   listOpenPullRequestsForRoom = (room, user) ->
-    repo = repos[room]
-    if not repo
+    repoarr = repos[room]
+    if not repoarr
       robot.messageRoom room, "There is no github repository associated with this room. Contact your friendly <@#{robot.name}> administrator for assistance"
       return
 
-    repo = octo.repos(githubOrg, repo)
-    repo.pulls.fetch(state: "open").then (prs) ->
-      return Promise.all prs.map (pr) ->
-        if not user? or pr.assignee?.login.toLowerCase() is user.toLowerCase()
-          return repo.pulls(pr.number).fetch()
-        return
-    .then ( prs ) ->
-      message = ""
-      for pr in prs when pr
-          message+= """
-            *[#{pr.title}]* +#{pr.additions} -#{pr.deletions}
-            #{pr.htmlUrl}
-            Updated: *#{moment(pr.updatedAt).fromNow()}*
-            Status: #{if pr.mergeable then "Ready for merge" else "Needs rebase"}
-            Assignee: #{lookupUserWithGithub pr.assignee}
-            \n
-          """
-      if message.length is 0
-        message = "No matching pull requests found"
+    for repo in repoarr 
+        repo = octo.repos(githubOrg, repo)
+        repo.pulls.fetch(state: "open").then (prs) ->
+        return Promise.all prs.map (pr) ->
+            if not user? or pr.assignee?.login.toLowerCase() is user.toLowerCase()
+            return repo.pulls(pr.number).fetch()
+            return
+        .then ( prs ) ->
+        message = ""
+        for pr in prs when pr
+            message+= """
+                *[#{pr.title}]* +#{pr.additions} -#{pr.deletions}
+                #{pr.htmlUrl}
+                Updated: *#{moment(pr.updatedAt).fromNow()}*
+                Status: #{if pr.mergeable then "Ready for merge" else "Needs rebase"}
+                Assignee: #{lookupUserWithGithub pr.assignee}
+                \n
+            """
+        if message.length is 0
+            message = "No matching pull requests found"
 
-      robot.messageRoom room, message
+        robot.messageRoom room, message
 
   robot.respond /(?:github|gh|git) delete all notifications/i, (msg) ->
     notificationsCleared = clearAllNotificationsForRoom(findRoom(msg))
