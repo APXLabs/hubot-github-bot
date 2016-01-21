@@ -134,20 +134,20 @@ module.exports = (robot) ->
             return repo.pulls(pr.number).fetch()
             return
         .then ( prs ) ->
-        message = ""
-        for pr in prs when pr
-            message+= """
-                *[#{pr.title}]* +#{pr.additions} -#{pr.deletions}
-                #{pr.htmlUrl}
-                Updated: *#{moment(pr.updatedAt).fromNow()}*
-                Status: #{if pr.mergeable then "Ready for merge" else "Needs rebase"}
-                Assignee: #{lookupUserWithGithub pr.assignee}
-                \n
-            """
-        if message.length is 0
-            message = "No matching pull requests found"
+            message = ""
+            for pr in prs when pr
+                message+= """
+                    *[#{pr.title}]* +#{pr.additions} -#{pr.deletions}
+                    #{pr.htmlUrl}
+                    Updated: *#{moment(pr.updatedAt).fromNow()}*
+                    Status: #{if pr.mergeable then "Ready for merge" else "Needs rebase"}
+                    Assignee: #{lookupUserWithGithub pr.assignee}
+                    \n
+                """
+            if message.length is 0
+                message = "No matching pull requests found"
 
-        robot.messageRoom room, message
+            robot.messageRoom room, message
 
   robot.respond /(?:github|gh|git) delete all notifications/i, (msg) ->
     notificationsCleared = clearAllNotificationsForRoom(findRoom(msg))
