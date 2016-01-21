@@ -122,6 +122,9 @@ module.exports = (robot) ->
 
   listOpenPullRequestsForRoom = (room, user) ->
     repoarr = repos[room]
+    console.log repos
+    console.log repoarr
+    console.log room
     if not repoarr
       robot.messageRoom room, "There is no github repository associated with this room (#{room}). Contact your friendly <@#{robot.name}> administrator for assistance"
       return
