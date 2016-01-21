@@ -129,10 +129,10 @@ module.exports = (robot) ->
     for repo in repoarr 
         repo = octo.repos(githubOrg, repo)
         repo.pulls.fetch(state: "open").then (prs) ->
-        return Promise.all prs.map (pr) ->
-            if not user? or pr.assignee?.login.toLowerCase() is user.toLowerCase()
-                return repo.pulls(pr.number).fetch()
-            return
+        	return Promise.all prs.map (pr) ->
+	            if not user? or pr.assignee?.login.toLowerCase() is user.toLowerCase()
+	                return repo.pulls(pr.number).fetch()
+	            return
         .then ( prs ) ->
             message = ""
             for pr in prs when pr
