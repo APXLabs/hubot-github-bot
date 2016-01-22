@@ -30,7 +30,7 @@ unless (github_url = process.env.HUBOT_GITHUB_URL)?
   github_url = "https://github.com"
 token = process.env.HUBOT_GITHUB_TOKEN
 githubOrg = process.env.HUBOT_GITHUB_ORG
-repos = JSON.parse process.env.HUBOT_GITHUB_REPOS_MAP
+repos = process.env.HUBOT_GITHUB_REPOS_MAP
 debug = process.env.HUBOT_GITHUB_DEBUG
 
 _ = require 'underscore'
@@ -121,15 +121,13 @@ module.exports = (robot) ->
     notifications.length - (notificationsToKeep.length)
 
   listOpenPullRequestsForRoom = (room, user) ->
-    repoarr = repos[room]
-    console.log repos
-    console.log repoarr
-    console.log room
+    repojson = JSON.parse repos
+    repoarr = repojson[room]
     if not repoarr
       robot.messageRoom room, "There is no github repository associated with this room (#{room}). Contact your friendly <@#{robot.name}> administrator for assistance"
       return
 
-    for repo in repoarr 
+    for repo in repoarr
         repo = octo.repos(githubOrg, repo)
         repo.pulls.fetch(state: "open").then (prs) ->
         	return Promise.all prs.map (pr) ->
@@ -138,19 +136,53 @@ module.exports = (robot) ->
 	            return
         .then ( prs ) ->
             message = ""
+            msg = {
+              text: "Pull requests"
+              user:
+                name: robot.name
+              done: false
+              room: "##{room}"
+            }
+            attachments = new Array()
             for pr in prs when pr
-                message+= """
-                    *[#{pr.title}]* +#{pr.additions} -#{pr.deletions}
-                    #{pr.htmlUrl}
-                    Updated: *#{moment(pr.updatedAt).fromNow()}*
-                    Status: #{if pr.mergeable then "Ready for merge" else "Needs rebase"}
-                    Assignee: #{lookupUserWithGithub pr.assignee}
-                    \n
-                """
-            if message.length is 0
-                message = "No matching pull requests found"
-
+                console.log pr
+  #              attfields = ([
+  #                {
+  #                  title: 'Assignee'
+  #                  value: "#{lookupUserWithGithub pr.assignee}"
+  #                  short: 'true'
+  #                }
+  #                {
+  #                  title: 'Updated'
+  #                  value: "#{moment(pr.updatedAt).fromNow()}"
+  #                  short: 'true'
+  #                }
+  #                {
+  #                  title: 'Status'
+  #                  value: "#{if pr.mergeable then "Ready for merge" else "Needs rebase"}"
+  #                  short: 'true'
+  #                }
+  #                {
+  #                  title: 'Changes'
+  #                  value: " +#{pr.additions} additions -#{pr.deletions} deletions"
+  #                  short: true
+  #                }
+  #                ])
+                attach =
+                  fallback: "##{pr.number} - #{pr.title}"
+                  color: "#{if pr.mergeable then "good" else "danger"}"
+                  title: "##{pr.number} - #{pr.title}"
+                  title_link: pr.htmlUrl
+                #  fields: attfields
+                attachments.push attach
+            message = "Open Skylight Pull Requests"
             robot.messageRoom room, message
+            robot.emit 'slack.attachment',
+              message: msg
+              content: attachments
+            if attachments.length is 0
+                message = "No matching pull requests found"
+                robot.messageRoom room, message
 
   robot.respond /(?:github|gh|git) delete all notifications/i, (msg) ->
     notificationsCleared = clearAllNotificationsForRoom(findRoom(msg))
