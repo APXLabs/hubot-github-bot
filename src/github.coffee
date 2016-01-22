@@ -145,7 +145,6 @@ module.exports = (robot) ->
             }
             attachments = new Array()
             for pr in prs when pr
-                console.log pr
   #              attfields = ([
   #                {
   #                  title: 'Assignee'
