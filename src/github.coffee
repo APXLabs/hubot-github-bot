@@ -123,6 +123,7 @@ module.exports = (robot) ->
   listOpenPullRequestsForRoom = (room, user) ->
     repojson = JSON.parse repos
     repoarr = repojson[room]
+
     if not repoarr
       robot.messageRoom room, "There is no github repository associated with this room (#{room}). Contact your friendly <@#{robot.name}> administrator for assistance"
       return
@@ -145,36 +146,15 @@ module.exports = (robot) ->
             }
             attachments = new Array()
             for pr in prs when pr
-  #              attfields = ([
-  #                {
-  #                  title: 'Assignee'
-  #                  value: "#{lookupUserWithGithub pr.assignee}"
-  #                  short: 'true'
-  #                }
-  #                {
-  #                  title: 'Updated'
-  #                  value: "#{moment(pr.updatedAt).fromNow()}"
-  #                  short: 'true'
-  #                }
-  #                {
-  #                  title: 'Status'
-  #                  value: "#{if pr.mergeable then "Ready for merge" else "Needs rebase"}"
-  #                  short: 'true'
-  #                }
-  #                {
-  #                  title: 'Changes'
-  #                  value: " +#{pr.additions} additions -#{pr.deletions} deletions"
-  #                  short: true
-  #                }
-  #                ])
-                attach =
-                  fallback: "##{pr.number} - #{pr.title}"
-                  color: "#{if pr.mergeable then "good" else "danger"}"
-                  title: "[#{pr.repo.name}] ##{pr.number} - #{pr.title}"
-                  title_link: pr.htmlUrl
-                #  fields: attfields
-                attachments.push attach
+              attach =
+                fallback: "##{pr.number} - #{pr.title}"
+                color: "#{if pr.mergeable then "good" else "danger"}"
+                title: "[#{pr.head.repo.name}] - ##{pr.number} - #{pr.title}"
+                title_link: pr.htmlUrl
+              #  fields: attfields
+              attachments.push attach
             message = "Open Skylight Pull Requests"
+            console.log "emitting #{pr.number}"
             robot.messageRoom room, message
             robot.emit 'slack.attachment',
               message: msg
