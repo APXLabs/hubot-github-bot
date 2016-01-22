@@ -170,7 +170,7 @@ module.exports = (robot) ->
                 attach =
                   fallback: "##{pr.number} - #{pr.title}"
                   color: "#{if pr.mergeable then "good" else "danger"}"
-                  title: "##{pr.number} - #{pr.title}"
+                  title: "[#{pr.repo.name}] ##{pr.number} - #{pr.title}"
                   title_link: pr.htmlUrl
                 #  fields: attfields
                 attachments.push attach
