@@ -154,7 +154,7 @@ module.exports = (robot) ->
               #  fields: attfields
               attachments.push attach
             message = "Open Skylight Pull Requests"
-            console.log "emitting #{pr.number}"
+
             robot.messageRoom room, message
             robot.emit 'slack.attachment',
               message: msg
