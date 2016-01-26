@@ -124,9 +124,20 @@ module.exports = (robot) ->
     repojson = JSON.parse repos
     repoarr = repojson[room]
 
+    console.log repoarr
     if not repoarr
       robot.messageRoom room, "There is no github repository associated with this room (#{room}). Contact your friendly <@#{robot.name}> administrator for assistance"
       return
+
+    message = ""
+    msg = {
+      text: "Pull requests"
+      user:
+        name: robot.name
+      done: false
+      room: "##{room}"
+    }
+    attachments = new Array()
 
     for repo in repoarr
         repo = octo.repos(githubOrg, repo)
@@ -136,16 +147,11 @@ module.exports = (robot) ->
 	                return repo.pulls(pr.number).fetch()
 	            return
         .then ( prs ) ->
-            message = ""
-            msg = {
-              text: "Pull requests"
-              user:
-                name: robot.name
-              done: false
-              room: "##{room}"
-            }
-            attachments = new Array()
             for pr in prs when pr
+              console.log pr.number
+              console.log pr.title
+              console.log pr.mergeable
+              console.log pr.head.repo.name
               attach =
                 fallback: "##{pr.number} - #{pr.title}"
                 color: "#{if pr.mergeable then "good" else "danger"}"
@@ -153,15 +159,17 @@ module.exports = (robot) ->
                 title_link: pr.htmlUrl
               #  fields: attfields
               attachments.push attach
+
             message = "Open Skylight Pull Requests"
 
-            robot.messageRoom room, message
-            robot.emit 'slack.attachment',
-              message: msg
-              content: attachments
             if attachments.length is 0
-                message = "No matching pull requests found"
-                robot.messageRoom room, message
+              message = "No matching pull requests found"
+              robot.messageRoom room, message
+            else
+              robot.messageRoom room, message
+              robot.emit 'slack.attachment',
+                message: msg
+                content: attachments
 
   robot.respond /(?:github|gh|git) delete all notifications/i, (msg) ->
     notificationsCleared = clearAllNotificationsForRoom(findRoom(msg))
