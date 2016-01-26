@@ -138,33 +138,35 @@ module.exports = (robot) ->
     }
     attachments = new Array()
 
-    for repo in repoarr
-        repo = octo.repos(githubOrg, repo)
+
+    Promise.all repoarr.map (repoinst) ->
+        repo = octo.repos(githubOrg, repoinst)
         repo.pulls.fetch(state: "open").then (prs) ->
         	return Promise.all prs.map (pr) ->
 	            if not user? or pr.assignee?.login.toLowerCase() is user.toLowerCase()
 	                return repo.pulls(pr.number).fetch()
 	            return
         .then ( prs ) ->
-            for pr in prs when pr
+            return Promise.all prs.map (pr) ->
               attach =
                 fallback: "##{pr.number} - #{pr.title}"
                 color: "#{if pr.mergeable then "good" else "danger"}"
                 title: "[#{pr.head.repo.name}] - ##{pr.number} - #{pr.title}"
                 title_link: pr.htmlUrl
               #  fields: attfields
-              attachments.push attach
+              return attachments.push attach
+    .then ( data ) ->
+      if attachments.length is 0
+        message = "No matching pull requests found"
+        robot.messageRoom room, message
+      else
+        message = "Open Skylight Pull Requests"
+        robot.messageRoom room, message
+        robot.emit 'slack.attachment',
+          message: msg
+          content: attachments
 
-            message = "Open Skylight Pull Requests"
 
-            if attachments.length is 0
-              message = "No matching pull requests found"
-              robot.messageRoom room, message
-            else
-              robot.messageRoom room, message
-              robot.emit 'slack.attachment',
-                message: msg
-                content: attachments
 
   robot.respond /(?:github|gh|git) delete all notifications/i, (msg) ->
     notificationsCleared = clearAllNotificationsForRoom(findRoom(msg))
