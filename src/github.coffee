@@ -124,7 +124,6 @@ module.exports = (robot) ->
     repojson = JSON.parse repos
     repoarr = repojson[room]
 
-    console.log repoarr
     if not repoarr
       robot.messageRoom room, "There is no github repository associated with this room (#{room}). Contact your friendly <@#{robot.name}> administrator for assistance"
       return
@@ -148,10 +147,6 @@ module.exports = (robot) ->
 	            return
         .then ( prs ) ->
             for pr in prs when pr
-              console.log pr.number
-              console.log pr.title
-              console.log pr.mergeable
-              console.log pr.head.repo.name
               attach =
                 fallback: "##{pr.number} - #{pr.title}"
                 color: "#{if pr.mergeable then "good" else "danger"}"
