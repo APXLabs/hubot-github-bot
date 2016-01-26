@@ -143,10 +143,10 @@ module.exports = (robot) ->
     Promise.all repoarr.map (repoinst) ->
         repo = octo.repos(githubOrg, repoinst)
         repo.pulls.fetch(state: "open").then (prs) ->
-        	return Promise.all prs.map (pr) ->
-	            if not user? or pr.assignee?.login.toLowerCase() is user.toLowerCase()
-	                return repo.pulls(pr.number).fetch()
-	            return
+          return Promise.all prs.map (pr) ->
+              if not user? or pr.assignee?.login.toLowerCase() is user.toLowerCase()
+                  return repo.pulls(pr.number).fetch()
+              return
         .then ( prs ) ->
             return Promise.all prs.map (pr) ->
               attach =
