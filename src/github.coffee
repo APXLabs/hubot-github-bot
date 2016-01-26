@@ -37,6 +37,7 @@ _ = require 'underscore'
 moment = require 'moment'
 cronJob = require("cron").CronJob
 Octokat = require('octokat')
+Promise = require 'bluebird'
 rootURL = github_url + "/api/v3"
 octo = new Octokat({
   token: token
