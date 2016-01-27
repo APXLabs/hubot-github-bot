@@ -155,7 +155,8 @@ module.exports = (robot) ->
                 title: "[#{pr.head.repo.name}] - ##{pr.number} - #{pr.title}"
                 title_link: pr.htmlUrl
               #  fields: attfields
-              return attachments.push attach
+              attachments.push attach
+              return
     .then ( data ) ->
       if attachments.length is 0
         message = "No matching pull requests found"
