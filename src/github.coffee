@@ -140,7 +140,7 @@ module.exports = (robot) ->
     attachments = new Array()
 
 
-    Promise.all repoarr.map (repoinst) ->
+    promout = Promise.all repoarr.map (repoinst) ->
         repo = octo.repos(githubOrg, repoinst)
         repo.pulls.fetch(state: "open").then (prs) ->
           return Promise.all prs.map (pr) ->
@@ -157,7 +157,9 @@ module.exports = (robot) ->
               #  fields: attfields
               attachments.push attach
               # return
-    .then ( repoinst ) ->
+
+    console.log promout
+    promout.then ( repoinst ) ->
       if attachments.length is 0
         message = "No matching pull requests found"
         robot.messageRoom room, message
