@@ -158,7 +158,6 @@ module.exports = (robot) ->
               attachments.push attach
               # return
 
-    console.log promout
     promout.then ( repoinst ) ->
       if attachments.length is 0
         message = "No matching pull requests found"
