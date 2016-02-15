@@ -156,8 +156,8 @@ module.exports = (robot) ->
                 title_link: pr.htmlUrl
               #  fields: attfields
               attachments.push attach
-              return
-    .then ( data ) ->
+              # return
+    .then ( repoinst ) ->
       if attachments.length is 0
         message = "No matching pull requests found"
         robot.messageRoom room, message
