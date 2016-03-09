@@ -32,17 +32,22 @@ token = process.env.HUBOT_GITHUB_TOKEN
 githubOrg = process.env.HUBOT_GITHUB_ORG
 repos = process.env.HUBOT_GITHUB_REPOS_MAP
 debug = process.env.HUBOT_GITHUB_DEBUG
+slacktoken = process.env.SLACK_API_TOKEN
 
 _ = require 'underscore'
 moment = require 'moment'
 cronJob = require("cron").CronJob
 Octokat = require('octokat')
 Promise = require 'bluebird'
+SlackAPI = require 'slack-node'
+AsciiTable = require 'ascii-table'
 rootURL = github_url + "/api/v3"
 octo = new Octokat({
   token: token
   rootURL: rootURL
 })
+
+slack = new SlackAPI(slacktoken)
 
 module.exports = (robot) ->
 
@@ -138,7 +143,8 @@ module.exports = (robot) ->
       room: "##{room}"
     }
     attachments = new Array()
-
+    commenters = { }
+    commentme = new Array()
 
     promout = Promise.all repoarr.map (repoinst) ->
         repo = octo.repos(githubOrg, repoinst)
@@ -149,25 +155,121 @@ module.exports = (robot) ->
               return
         .then ( prs ) ->
             return Promise.all prs.map (pr) ->
-              attach =
-                fallback: "##{pr.number} - #{pr.title}"
-                color: "#{if pr.mergeable then "good" else "danger"}"
-                title: "[#{pr.head.repo.name}] - ##{pr.number} - #{pr.title}"
-                title_link: pr.htmlUrl
-              #  fields: attfields
-              attachments.push attach
-              # return
+                totcomments = pr.comments + pr.reviewComments
+                attach =
+                  fallback: "##{pr.number} - #{pr.title}"
+                  color: "#{if pr.mergeable then "good" else "danger"}"
+                  title: "[#{pr.head.repo.name}] - ##{pr.number} - #{pr.title}"
+                  title_link: pr.htmlUrl
+                  text: "#{totcomments} comments"
+                #  fields: attfields
+                attachments.push attach
+                return repo.pulls(pr.number).comments.fetch()
+        .then (comments) ->
+            return Promise.all comments.map (commentset) ->
+                commentcount = 0
+                if (commentset[0]?.htmlUrl?)
+                  prurl = commentset[0].htmlUrl
 
-    promout.then ( repoinst ) ->
-      if attachments.length is 0
-        message = "No matching pull requests found"
-        robot.messageRoom room, message
-      else
-        message = "Open Skylight Pull Requests"
-        robot.messageRoom room, message
-        robot.emit 'slack.attachment',
-          message: msg
-          content: attachments
+                  for comment in commentset
+                    email = comment.user.login
+                    if (commenters[email]?)
+                      commenters[email] += 1
+                    else
+                      commenters[email] = 1
+                    commentcount += 1
+
+                prurl = commentset[0]?.pullRequestUrl
+                if prurl?
+                  prnum = prurl.substring(prurl.lastIndexOf("/") + 1)
+                  return repo.pulls(prnum).fetch()
+                else
+                  return
+        .then (prs) ->
+            return Promise.all prs.map (pr) ->
+              if pr?.reviewCommentsUrl?
+                return octo.fromUrl(pr.reviewCommentsUrl).fetch()
+              else
+                return
+        .then (reviewcoms) ->
+            return Promise.all reviewcoms.map (reviewcom) ->
+              commentcount = 0
+              if (reviewcom?)
+                for comment in reviewcom
+                  email = comment.user.login
+                  if (commenters[email]?)
+                    commenters[email] += 1
+                  else
+                    commenters[email] = 1
+                  commentcount += 1
+
+    promout.then ( dataprom ) ->
+        leaders = new AsciiTable 'PR Comment Leaderboard'
+        leaders.setHeading('User', 'Comments')
+
+        robot.logger.info Object.keys(commenters)
+
+        for key in Object.keys(commenters)
+          leaders.addRow key, commenters[key]
+
+        robot.logger.info leaders.toString()
+
+        leaders.sortColumn 1, (a,b) ->
+          return b - a
+
+        robot.logger.info leaders.toString()
+
+        if attachments.length is 0
+          message = "No matching pull requests found"
+          robot.messageRoom room, message
+        else
+          message = "Open Skylight Pull Requests"
+          #robot.logger.info attachments
+          robot.messageRoom room, message
+          robot.emit 'slack.attachment',
+            message: msg
+            content: attachments
+
+          #robot.logger.info attachments
+          robot.messageRoom room, "```" + leaders.toString() + "```"
+          # robot.emit 'slack.attachment',
+          #   message: leaders.toString()
+          #   content: leaders.toString()
+
+    # promout.then (prs) ->
+    #     return Promise.all prs.map (pr) ->
+    #       return octo.fromUrl(pr.commentsUrl).fetch()
+    # .then ( comments ) ->
+    #   return Promise.all comments.map (commentset) ->
+    #     for comment in commentset
+    #       email = comment.user.login.replace("-",".").concat("@apx-labs.com")
+    #       if (commenters[email]?)
+    #         commenters[email] += 1
+    #       else
+    #         commenters[email] = 1
+    #       commentcount += 1
+    #     robot.logger.info commenters
+    #     commentme.push "test"
+    #
+    #     robot.logger.info commentcount
+    #     robot.logger.info "com: #{commentme}"
+    #     robot.logger.info "#{attachments}"
+    #     # for email, count in commenters
+    #     #   users = robot.brain.data.users
+    #     #   robot.logger.info email
+    #     #   for k,user of users
+    #     #     slackuser = user['slack']
+    #     #     for k, profile of slackuser when k is 'profile'
+    #     #       robot.logger.info "#{profile.email} is my email"
+    #
+    #     # attach =
+    #     #   fallback: "##{pr.number} - #{pr.title}"
+    #     #   color: "#{if pr.mergeable then "good" else "danger"}"
+    #     #   title: "[#{pr.head.repo.name}] - ##{pr.number} - #{pr.title}"
+    #     #   title_link: pr.htmlUrl
+    #     #   text: "#{commentcount} comments"
+    #     # #  fields: attfields
+        # attachments.push attach
 
 
 

@@ -22,11 +22,13 @@
     "url": "https://github.com/ndaversa/hubot-github-bot/issues"
   },
   "dependencies": {
+    "ascii-table": "0.0.8",
     "bluebird": "^3.1.5",
     "coffee-script": "^1.10.0",
     "cron": "^1.0.9",
     "moment": "^2.10.6",
     "octokat": "^0.4.12",
+    "slack-node": "^0.2.0",
     "underscore": "^1.8.3"
   },
   "main": "index.coffee",
