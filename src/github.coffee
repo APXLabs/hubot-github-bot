@@ -156,12 +156,16 @@ module.exports = (robot) ->
         .then ( prs ) ->
             return Promise.all prs.map (pr) ->
                 totcomments = pr.comments + pr.reviewComments
+                if (totcomments is 1)
+                  comtext = "comment"
+                else
+                  comtext = "comments"
                 attach =
                   fallback: "##{pr.number} - #{pr.title}"
                   color: "#{if pr.mergeable then "good" else "danger"}"
                   title: "[#{pr.head.repo.name}] - ##{pr.number} - #{pr.title}"
                   title_link: pr.htmlUrl
-                  text: "#{totcomments} comments"
+                  text: "#{totcomments} #{comtext}"
                 #  fields: attfields
                 attachments.push attach
                 return repo.pulls(pr.number).comments.fetch()
@@ -202,74 +206,40 @@ module.exports = (robot) ->
                   else
                     commenters[email] = 1
                   commentcount += 1
+              return
+
 
     promout.then ( dataprom ) ->
-        leaders = new AsciiTable 'PR Comment Leaderboard'
-        leaders.setHeading('User', 'Comments')
-
-        robot.logger.info Object.keys(commenters)
-
-        for key in Object.keys(commenters)
-          leaders.addRow key, commenters[key]
-
-        robot.logger.info leaders.toString()
-
-        leaders.sortColumn 1, (a,b) ->
-          return b - a
-
-        robot.logger.info leaders.toString()
-
         if attachments.length is 0
           message = "No matching pull requests found"
           robot.messageRoom room, message
         else
           message = "Open Skylight Pull Requests"
           #robot.logger.info attachments
+
+          # Build the leaderboard
+          leaders = new AsciiTable 'PR Comment Leaderboard'
+          leaders.setHeading('User', 'Comments')
+
+          for key in Object.keys(commenters)
+            leaders.addRow key, commenters[key]
+
+          leaders.sortColumn 1, (a,b) ->
+            return b - a
+
+          preformmsg = "```" + leaders.toString() + "```"
+
+          attach =
+            fallback: preformmsg
+            pretext: preformmsg
+            mrkdwn_in: ["text", "pretext"]
+          #  fields: attfields
+          attachments.push attach
+
           robot.messageRoom room, message
           robot.emit 'slack.attachment',
             message: msg
             content: attachments
-
-          #robot.logger.info attachments
-          robot.messageRoom room, "```" + leaders.toString() + "```"
-          # robot.emit 'slack.attachment',
-          #   message: leaders.toString()
-          #   content: leaders.toString()
-
-    # promout.then (prs) ->
-    #     return Promise.all prs.map (pr) ->
-    #       return octo.fromUrl(pr.commentsUrl).fetch()
-    # .then ( comments ) ->
-    #   return Promise.all comments.map (commentset) ->
-    #     for comment in commentset
-    #       email = comment.user.login.replace("-",".").concat("@apx-labs.com")
-    #       if (commenters[email]?)
-    #         commenters[email] += 1
-    #       else
-    #         commenters[email] = 1
-    #       commentcount += 1
-    #     robot.logger.info commenters
-    #     commentme.push "test"
-    #
-    #     robot.logger.info commentcount
-    #     robot.logger.info "com: #{commentme}"
-    #     robot.logger.info "#{attachments}"
-    #     # for email, count in commenters
-    #     #   users = robot.brain.data.users
-    #     #   robot.logger.info email
-    #     #   for k,user of users
-    #     #     slackuser = user['slack']
-    #     #     for k, profile of slackuser when k is 'profile'
-    #     #       robot.logger.info "#{profile.email} is my email"
-    #
-    #     # attach =
-    #     #   fallback: "##{pr.number} - #{pr.title}"
-    #     #   color: "#{if pr.mergeable then "good" else "danger"}"
-    #     #   title: "[#{pr.head.repo.name}] - ##{pr.number} - #{pr.title}"
-    #     #   title_link: pr.htmlUrl
-    #     #   text: "#{commentcount} comments"
-    #     # #  fields: attfields
-        # attachments.push attach
 
 
 
